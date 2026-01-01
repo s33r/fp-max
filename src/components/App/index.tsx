@@ -1,5 +1,5 @@
-import { Counter } from './components/Counter';
-import './App.scss';
+import { Counter } from '../Counter';
+import './index.scss';
 
 export const App = () => {
   return (

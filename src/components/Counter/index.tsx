@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import Decimal from 'decimal.js';
 import { z } from 'zod';
-import './Counter.scss';
+import './index.scss';
 
 const CounterPropsSchema = z.object({
   initialValue: z.number().default(0),
