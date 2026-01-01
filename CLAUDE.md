@@ -5,7 +5,7 @@ When working on a request follow this process:
 - Commit
 - Push
 
-# Project Organization.
+# Project Organization
 
 There are two kinds of components:
 1. **Library** Components are located in the `src/components` directory. They provide the user interface for the project.
