@@ -522,13 +522,36 @@ function drawConnection(
 
 export const SlateRenderer: React.FC<SlateRendererProps> = ({
   slate,
-  width = 1200,
-  height = 800,
+  width,
+  height,
   onSlateChange
 }) => {
+  const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [dragState, setDragState] = useState<DragState | null>(null);
   const [renderTrigger, setRenderTrigger] = useState(0);
+  const [dimensions, setDimensions] = useState({ width: width ?? 800, height: height ?? 600 });
+
+  // Measure container size
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const updateDimensions = () => {
+      const rect = container.getBoundingClientRect();
+      setDimensions({
+        width: width ?? rect.width,
+        height: height ?? rect.height
+      });
+    };
+
+    updateDimensions();
+
+    const resizeObserver = new ResizeObserver(updateDimensions);
+    resizeObserver.observe(container);
+
+    return () => resizeObserver.disconnect();
+  }, [width, height]);
 
   // Function to redraw the canvas
   const redraw = useCallback(() => {
@@ -538,16 +561,19 @@ export const SlateRenderer: React.FC<SlateRendererProps> = ({
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
+    const canvasWidth = dimensions.width;
+    const canvasHeight = dimensions.height;
+
     // Handle high DPI displays
     const dpr = window.devicePixelRatio || 1;
-    canvas.width = width * dpr;
-    canvas.height = height * dpr;
-    canvas.style.width = `${width}px`;
-    canvas.style.height = `${height}px`;
+    canvas.width = canvasWidth * dpr;
+    canvas.height = canvasHeight * dpr;
+    canvas.style.width = `${canvasWidth}px`;
+    canvas.style.height = `${canvasHeight}px`;
     ctx.scale(dpr, dpr);
 
     // Clear and draw grid
-    drawGrid(ctx, width, height);
+    drawGrid(ctx, canvasWidth, canvasHeight);
 
     const nodes = slate.getAllNodes();
 
@@ -574,7 +600,7 @@ export const SlateRenderer: React.FC<SlateRendererProps> = ({
     for (const { node, position } of nodes) {
       drawNode(ctx, node, position);
     }
-  }, [slate, width, height]);
+  }, [slate, dimensions]);
 
   // Initial render and re-render when slate changes
   useEffect(() => {
@@ -720,7 +746,7 @@ export const SlateRenderer: React.FC<SlateRendererProps> = ({
   }, [dragState, onSlateChange]);
 
   return (
-    <div className="slate-renderer">
+    <div className="slate-renderer" ref={containerRef}>
       <canvas
         ref={canvasRef}
         onMouseDown={handleMouseDown}
