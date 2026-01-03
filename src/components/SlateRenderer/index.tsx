@@ -1,6 +1,7 @@
 import React, { useRef, useEffect } from 'react';
 import { Slate } from '../../logic/Slate';
 import { Node } from '../../logic/Node';
+import { Connection } from '../../logic/Connection';
 import { Position } from '../../logic/Slate';
 import './index.scss';
 
@@ -47,6 +48,52 @@ function calculateNodeHeight(node: Node): number {
   const totalRows = titleBarRows + statusBarRows + inputPortRows + outputPortRows + errorPortRows + configBarRows;
 
   return totalRows * GRID_SIZE;
+}
+
+/**
+ * Calculate the Y position for an output port on a node
+ */
+function getOutputPortY(node: Node, portIndex: number, nodeY: number): number {
+  const titleBarRows = 1;
+  const statusBarRows = 2;
+
+  // When flipped, outputs come before inputs (they swap positions)
+  // When not flipped, outputs come after inputs
+  let rowOffset: number;
+  if (node.flipped) {
+    // Outputs shown first (after title and status)
+    rowOffset = titleBarRows + statusBarRows + portIndex;
+  } else {
+    // Inputs shown first, then outputs
+    const inputPortRows = node.inputPorts.length;
+    rowOffset = titleBarRows + statusBarRows + inputPortRows + portIndex;
+  }
+
+  // Return the center Y of the port row
+  return nodeY + rowOffset * GRID_SIZE + GRID_SIZE / 2;
+}
+
+/**
+ * Calculate the Y position for an input port on a node
+ */
+function getInputPortY(node: Node, portIndex: number, nodeY: number): number {
+  const titleBarRows = 1;
+  const statusBarRows = 2;
+
+  // When flipped, inputs come after outputs (they swap positions)
+  // When not flipped, inputs come before outputs
+  let rowOffset: number;
+  if (node.flipped) {
+    // Outputs shown first, then inputs
+    const outputPortRows = node.outputPorts.length;
+    rowOffset = titleBarRows + statusBarRows + outputPortRows + portIndex;
+  } else {
+    // Inputs shown first (after title and status)
+    rowOffset = titleBarRows + statusBarRows + portIndex;
+  }
+
+  // Return the center Y of the port row
+  return nodeY + rowOffset * GRID_SIZE + GRID_SIZE / 2;
 }
 
 function drawGrid(ctx: CanvasRenderingContext2D, width: number, height: number): void {
@@ -322,32 +369,62 @@ function drawPort(
 
 function drawConnection(
   ctx: CanvasRenderingContext2D,
+  connection: Connection,
   sourcePosition: Position,
-  targetPosition: Position,
-  queueLength: number
+  targetPosition: Position
 ): void {
-  const sourceX = sourcePosition.x + NODE_WIDTH;
-  const sourceY = sourcePosition.y + GRID_SIZE * 2;
-  const targetX = targetPosition.x;
-  const targetY = targetPosition.y + GRID_SIZE * 2;
+  const sourceNode = connection.sourceNode;
+  const targetNode = connection.targetNode;
 
+  // Calculate X positions based on reversed state
+  // Output ports are on the right by default, left when reversed
+  const sourceX = sourceNode.reversed
+    ? sourcePosition.x
+    : sourcePosition.x + NODE_WIDTH;
+
+  // Input ports are on the left by default, right when reversed
+  const targetX = targetNode.reversed
+    ? targetPosition.x + NODE_WIDTH
+    : targetPosition.x;
+
+  // Calculate Y positions based on port indices
+  const sourceY = getOutputPortY(sourceNode, connection.sourcePortIndex, sourcePosition.y);
+  const targetY = getInputPortY(targetNode, connection.targetPortIndex, targetPosition.y);
+
+  // Draw connection with right-angle bends
+  // Path: source -> horizontal out -> vertical -> horizontal in -> target
   ctx.beginPath();
-  ctx.moveTo(sourceX, sourceY);
-  ctx.lineTo(targetX, targetY);
   ctx.strokeStyle = COLORS.connection;
   ctx.lineWidth = 2;
+
+  // Calculate the midpoint X for the vertical segment
+  const midX = (sourceX + targetX) / 2;
+
+  // Snap midX to grid center for cleaner look
+  const snappedMidX = Math.round(midX / GRID_SIZE) * GRID_SIZE + GRID_SIZE / 2;
+
+  ctx.moveTo(sourceX, sourceY);
+  ctx.lineTo(snappedMidX, sourceY);  // Horizontal from source
+  ctx.lineTo(snappedMidX, targetY);  // Vertical segment
+  ctx.lineTo(targetX, targetY);       // Horizontal to target
   ctx.stroke();
 
   // Draw queue length if not empty
+  const queueLength = connection.getQueueLength();
   if (queueLength > 0) {
-    const midX = (sourceX + targetX) / 2;
-    const midY = (sourceY + targetY) / 2;
+    // Position the label on the vertical segment
+    const labelY = (sourceY + targetY) / 2;
+
+    // Draw background for better readability
+    ctx.fillStyle = COLORS.background;
+    const textWidth = ctx.measureText(queueLength.toString()).width;
+    ctx.fillRect(snappedMidX - textWidth / 2 - 4, labelY - 8, textWidth + 8, 16);
 
     ctx.font = 'bold 12px sans-serif';
     ctx.fillStyle = COLORS.connection;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText(queueLength.toString(), midX, midY);
+    ctx.fillText(queueLength.toString(), snappedMidX, labelY);
     ctx.textAlign = 'left';
   }
 }
@@ -394,7 +471,7 @@ export const SlateRenderer: React.FC<SlateRendererProps> = ({
       }
 
       if (sourcePosition && targetPosition) {
-        drawConnection(ctx, sourcePosition, targetPosition, connection.getQueueLength());
+        drawConnection(ctx, connection, sourcePosition, targetPosition);
       }
     }
 
