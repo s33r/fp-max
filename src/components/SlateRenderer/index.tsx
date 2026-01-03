@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useCallback, useState } from 'react';
 import { Slate } from '../../logic/Slate';
 import { Node } from '../../logic/Node';
 import { Connection } from '../../logic/Connection';
@@ -9,6 +9,14 @@ interface SlateRendererProps {
   slate: Slate;
   width?: number;
   height?: number;
+  onSlateChange?: () => void;
+}
+
+interface DragState {
+  nodeId: string;
+  node: Node;
+  offsetX: number;
+  offsetY: number;
 }
 
 const GRID_SIZE = Slate.GRID_SIZE;
@@ -94,6 +102,40 @@ function getInputPortY(node: Node, portIndex: number, nodeY: number): number {
 
   // Return the center Y of the port row
   return nodeY + rowOffset * GRID_SIZE + GRID_SIZE / 2;
+}
+
+/**
+ * Find the node whose title bar contains the given point
+ * Returns the node ID and node if found, null otherwise
+ */
+function findNodeAtTitleBar(
+  slate: Slate,
+  x: number,
+  y: number
+): { id: string; node: Node; position: Position } | null {
+  const nodes = slate.getAllNodes();
+
+  // Check nodes in reverse order (top-most first, since they're drawn last)
+  for (let i = nodes.length - 1; i >= 0; i--) {
+    const { id, node, position } = nodes[i];
+
+    // Check if point is within title bar bounds
+    const titleBarLeft = position.x;
+    const titleBarRight = position.x + NODE_WIDTH;
+    const titleBarTop = position.y;
+    const titleBarBottom = position.y + GRID_SIZE;
+
+    if (
+      x >= titleBarLeft &&
+      x <= titleBarRight &&
+      y >= titleBarTop &&
+      y <= titleBarBottom
+    ) {
+      return { id, node, position };
+    }
+  }
+
+  return null;
 }
 
 function drawGrid(ctx: CanvasRenderingContext2D, width: number, height: number): void {
@@ -432,11 +474,15 @@ function drawConnection(
 export const SlateRenderer: React.FC<SlateRendererProps> = ({
   slate,
   width = 1200,
-  height = 800
+  height = 800,
+  onSlateChange
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [dragState, setDragState] = useState<DragState | null>(null);
+  const [renderTrigger, setRenderTrigger] = useState(0);
 
-  useEffect(() => {
+  // Function to redraw the canvas
+  const redraw = useCallback(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
@@ -481,9 +527,117 @@ export const SlateRenderer: React.FC<SlateRendererProps> = ({
     }
   }, [slate, width, height]);
 
+  // Initial render and re-render when slate changes
+  useEffect(() => {
+    redraw();
+  }, [redraw, renderTrigger]);
+
+  // Get mouse position relative to canvas
+  const getMousePosition = useCallback((e: React.MouseEvent<HTMLCanvasElement>): Position => {
+    const canvas = canvasRef.current;
+    if (!canvas) return { x: 0, y: 0 };
+
+    const rect = canvas.getBoundingClientRect();
+    return {
+      x: e.clientX - rect.left,
+      y: e.clientY - rect.top
+    };
+  }, []);
+
+  // Handle mouse down - start dragging if on title bar
+  const handleMouseDown = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
+    const pos = getMousePosition(e);
+    const hitNode = findNodeAtTitleBar(slate, pos.x, pos.y);
+
+    if (hitNode && !hitNode.node.locked) {
+      setDragState({
+        nodeId: hitNode.id,
+        node: hitNode.node,
+        offsetX: pos.x - hitNode.position.x,
+        offsetY: pos.y - hitNode.position.y
+      });
+
+      // Change cursor
+      const canvas = canvasRef.current;
+      if (canvas) {
+        canvas.style.cursor = 'grabbing';
+      }
+    }
+  }, [slate, getMousePosition]);
+
+  // Handle mouse move - update node position if dragging
+  const handleMouseMove = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
+    const pos = getMousePosition(e);
+
+    if (dragState) {
+      // Calculate new position
+      const newX = pos.x - dragState.offsetX;
+      const newY = pos.y - dragState.offsetY;
+
+      // Move the node (Slate.moveNode handles grid snapping)
+      slate.moveNode(dragState.nodeId, newX, newY);
+
+      // Trigger redraw
+      setRenderTrigger(prev => prev + 1);
+    } else {
+      // Update cursor based on hover state
+      const canvas = canvasRef.current;
+      if (canvas) {
+        const hitNode = findNodeAtTitleBar(slate, pos.x, pos.y);
+        if (hitNode && !hitNode.node.locked) {
+          canvas.style.cursor = 'grab';
+        } else {
+          canvas.style.cursor = 'default';
+        }
+      }
+    }
+  }, [dragState, slate, getMousePosition]);
+
+  // Handle mouse up - stop dragging
+  const handleMouseUp = useCallback(() => {
+    if (dragState) {
+      setDragState(null);
+
+      // Reset cursor
+      const canvas = canvasRef.current;
+      if (canvas) {
+        canvas.style.cursor = 'default';
+      }
+
+      // Notify parent of change
+      if (onSlateChange) {
+        onSlateChange();
+      }
+    }
+  }, [dragState, onSlateChange]);
+
+  // Handle mouse leave - stop dragging if mouse leaves canvas
+  const handleMouseLeave = useCallback(() => {
+    if (dragState) {
+      setDragState(null);
+
+      // Reset cursor
+      const canvas = canvasRef.current;
+      if (canvas) {
+        canvas.style.cursor = 'default';
+      }
+
+      // Notify parent of change
+      if (onSlateChange) {
+        onSlateChange();
+      }
+    }
+  }, [dragState, onSlateChange]);
+
   return (
     <div className="slate-renderer">
-      <canvas ref={canvasRef} />
+      <canvas
+        ref={canvasRef}
+        onMouseDown={handleMouseDown}
+        onMouseMove={handleMouseMove}
+        onMouseUp={handleMouseUp}
+        onMouseLeave={handleMouseLeave}
+      />
     </div>
   );
 };
