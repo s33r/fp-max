@@ -608,7 +608,25 @@ export const SlateRenderer: React.FC<SlateRendererProps> = ({
             onSlateChange();
           }
           return;
-        // Other buttons can be handled here in the future
+        case ConfigButton.Flip:
+          buttonClick.node.toggleFlipped();
+          setRenderTrigger(prev => prev + 1);
+          if (onSlateChange) {
+            onSlateChange();
+          }
+          return;
+        case ConfigButton.Reverse:
+          buttonClick.node.toggleReversed();
+          setRenderTrigger(prev => prev + 1);
+          if (onSlateChange) {
+            onSlateChange();
+          }
+          return;
+        case ConfigButton.Help:
+          // Show tooltip/description for the node
+          // For now, just log to console - could be expanded to show a modal or tooltip
+          console.log(`${buttonClick.node.title}: ${buttonClick.node.description}`);
+          return;
       }
     }
 
