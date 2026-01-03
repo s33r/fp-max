@@ -1,7 +1,9 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useEffect } from 'react';
 import { Slate } from '../../logic/Slate';
 import { Node } from '../../logic/Node';
 import { InfinityWell } from '../../logic/InfinityWell';
+import { Clock } from '../../logic/Clock';
+import { defaultActivityRegistry } from '../../activities';
 import { SlateRenderer } from '../SlateRenderer';
 import { InfinityWellView } from '../InfinityWellView';
 import './index.scss';
@@ -74,6 +76,23 @@ export const SlateMode: React.FC = () => {
 
     return newWell;
   }, []);
+
+  // Create the Clock instance
+  const clock = useMemo(() => {
+    return new Clock(slate, well, defaultActivityRegistry, 1000);
+  }, [slate, well]);
+
+  // Start the clock when component mounts, stop when unmounts
+  useEffect(() => {
+    console.log('[SlateMode] Starting clock...');
+    clock.start();
+
+    // Cleanup: stop the clock when component unmounts
+    return () => {
+      console.log('[SlateMode] Stopping clock...');
+      clock.stop();
+    };
+  }, [clock]);
 
   return (
     <div className="slate-mode">
