@@ -6,7 +6,7 @@ import { SlateRenderer } from '../SlateRenderer';
 import { InfinityWellView } from '../InfinityWellView';
 import './index.scss';
 
-export const SlateExample: React.FC = () => {
+export const SlateMode: React.FC = () => {
   const slate = useMemo(() => {
     const newSlate = new Slate();
 
@@ -76,16 +76,12 @@ export const SlateExample: React.FC = () => {
   }, []);
 
   return (
-    <div className="slate-example">
-      <div className="slate-example-header">
-        <h1>Alchemist's Slate - Example</h1>
-        <p>A simple demonstration with three connected nodes: Source → Printer → Sink</p>
-      </div>
-      <div className="slate-example-content">
-        <div className="slate-example-sidebar">
+    <div className="slate-mode">
+      <div className="slate-mode-content">
+        <div className="slate-mode-sidebar">
           <InfinityWellView well={well} />
         </div>
-        <div className="slate-example-main">
+        <div className="slate-mode-main">
           <SlateRenderer slate={slate} />
         </div>
       </div>
