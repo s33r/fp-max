@@ -1,7 +1,9 @@
 import React, { useMemo } from 'react';
 import { Slate } from '../../logic/Slate';
 import { Node } from '../../logic/Node';
+import { InfinityWell } from '../../logic/InfinityWell';
 import { SlateRenderer } from '../SlateRenderer';
+import { InfinityWellView } from '../InfinityWellView';
 import './index.scss';
 
 export const SlateExample: React.FC = () => {
@@ -57,6 +59,22 @@ export const SlateExample: React.FC = () => {
     return newSlate;
   }, []);
 
+  // Create an Infinity Well with some example data
+  const well = useMemo(() => {
+    const newWell = new InfinityWell(100);
+
+    // Add some example resources
+    newWell.createResourceSlot('Gold', 1000, 50);
+    newWell.createResourceSlot('Wood', 500, 250);
+    newWell.createResourceSlot('Stone', 500, 100);
+
+    // Add some example items
+    newWell.createItemSlot('Speed Boost', 10, 3);
+    newWell.createItemSlot('Capacity Upgrade', 5, 1);
+
+    return newWell;
+  }, []);
+
   return (
     <div className="slate-example">
       <div className="slate-example-header">
@@ -64,7 +82,12 @@ export const SlateExample: React.FC = () => {
         <p>A simple demonstration with three connected nodes: Source → Printer → Sink</p>
       </div>
       <div className="slate-example-content">
-        <SlateRenderer slate={slate} />
+        <div className="slate-example-sidebar">
+          <InfinityWellView well={well} />
+        </div>
+        <div className="slate-example-main">
+          <SlateRenderer slate={slate} />
+        </div>
       </div>
     </div>
   );

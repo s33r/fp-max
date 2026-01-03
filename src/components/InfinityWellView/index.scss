@@ -1,0 +1,151 @@
+.infinity-well-view {
+  background-color: #1a1a1a;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  border-right: 2px solid #4a4a4a;
+  overflow-y: auto;
+}
+
+.well-header {
+  height: 32px;
+  background-color: #3d3d3d;
+  border-bottom: 1px solid #4a4a4a;
+  display: flex;
+  align-items: center;
+  padding: 0 8px;
+  flex-shrink: 0;
+
+  .well-icon {
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 6px;
+    font-size: 18px;
+  }
+
+  .well-title {
+    flex: 1;
+    color: #e0e0e0;
+    font-size: 14px;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
+
+.well-section {
+  border-bottom: 1px solid #3a3a3a;
+
+  .section-header {
+    height: 32px;
+    background-color: #252525;
+    display: flex;
+    align-items: center;
+    padding: 0 8px;
+
+    .section-title {
+      color: #888888;
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+  }
+
+  .section-content {
+    padding: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+}
+
+.slot-display {
+  background-color: #2d2d2d;
+  border: 1px solid #4a4a4a;
+  border-radius: 4px;
+  padding: 8px;
+
+  .slot-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 6px;
+
+    .slot-icon {
+      width: 20px;
+      height: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      margin-right: 6px;
+    }
+
+    .slot-label {
+      color: #b0b0b0;
+      font-size: 12px;
+      font-weight: 500;
+      flex: 1;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+  }
+
+  .slot-bar {
+    height: 8px;
+    background-color: #1a1a1a;
+    border-radius: 4px;
+    overflow: hidden;
+    margin-bottom: 4px;
+
+    .slot-fill {
+      height: 100%;
+      background-color: #4a9eff;
+      border-radius: 4px;
+      transition: width 0.2s ease;
+    }
+  }
+
+  .slot-values {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 2px;
+
+    .slot-quantity {
+      color: #e0e0e0;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .slot-separator {
+      color: #666666;
+      font-size: 12px;
+    }
+
+    .slot-cap {
+      color: #888888;
+      font-size: 12px;
+    }
+  }
+}
+
+.well-empty {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+
+  .empty-message {
+    color: #666666;
+    font-size: 12px;
+    font-style: italic;
+    text-align: center;
+  }
+}
