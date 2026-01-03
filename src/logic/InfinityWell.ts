@@ -1,4 +1,4 @@
-import { Bosun } from './Connection';
+import { Bosun } from './Bosun';
 
 /**
  * Slot represents a storage location in the Infinity Well
@@ -91,12 +91,11 @@ export class InfinityWell {
 
     this.bosunSlot.quantity--;
 
-    const bosun: Bosun = {
-      id: this.nextBosunId++,
-      name: this.generateBosunName(),
-      inventory: {},
-      tooltip: ''
-    };
+    const bosun = new Bosun(
+      this.nextBosunId++,
+      this.generateBosunName(),
+      1 // Starting speed: 1 cell per second
+    );
 
     return bosun;
   }

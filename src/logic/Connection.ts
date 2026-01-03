@@ -1,19 +1,5 @@
 import { Node } from './Node';
-
-/**
- * Bosun represents a creature that travels between nodes
- */
-export interface Bosun {
-  id: number;
-  name: string;
-  inventory: {
-    [key: string]: {
-      quantity: number;
-      cap: number;
-    };
-  };
-  tooltip: string;
-}
+import { Bosun } from './Bosun';
 
 /**
  * Connection represents a link between an output port on one node and an input port on another
