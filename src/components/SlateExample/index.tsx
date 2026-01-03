@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 import { Slate } from '../../logic/Slate';
 import { Node } from '../../logic/Node';
-import { SlateView } from '../SlateView';
+import { SlateRenderer } from '../SlateRenderer';
 import './index.scss';
 
 export const SlateExample: React.FC = () => {
@@ -64,7 +64,7 @@ export const SlateExample: React.FC = () => {
         <p>A simple demonstration with three connected nodes: Source → Printer → Sink</p>
       </div>
       <div className="slate-example-content">
-        <SlateView slate={slate} />
+        <SlateRenderer slate={slate} />
       </div>
     </div>
   );
