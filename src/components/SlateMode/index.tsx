@@ -1,4 +1,4 @@
-import React, { useMemo, useEffect } from 'react';
+import React, { useMemo, useEffect, useState } from 'react';
 import { Slate } from '../../logic/Slate';
 import { Node } from '../../logic/Node';
 import { InfinityWell } from '../../logic/InfinityWell';
@@ -9,6 +9,8 @@ import { InfinityWellView } from '../InfinityWellView';
 import './index.scss';
 
 export const SlateMode: React.FC = () => {
+  // State to force re-renders when the well updates
+  const [, setUpdateTrigger] = useState(0);
   const slate = useMemo(() => {
     const newSlate = new Slate();
 
@@ -93,6 +95,17 @@ export const SlateMode: React.FC = () => {
       clock.stop();
     };
   }, [clock]);
+
+  // Update the view every 100ms to reflect changes in the Infinity Well
+  useEffect(() => {
+    const intervalId = setInterval(() => {
+      setUpdateTrigger(prev => prev + 1);
+    }, 100);
+
+    return () => {
+      clearInterval(intervalId);
+    };
+  }, []);
 
   return (
     <div className="slate-mode">
