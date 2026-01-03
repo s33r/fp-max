@@ -140,7 +140,9 @@ export class Clock {
 
     // Execute the activity
     try {
+      const bosunsBefore = this.infinityWell.getBosunCount();
       const result: ActivityResult = activity(context);
+      const bosunsAfter = this.infinityWell.getBosunCount();
 
       if (!result.success) {
         // Only log errors that aren't just "no bosuns available"
@@ -148,7 +150,7 @@ export class Clock {
           console.log(`[Clock] ${node.title}: ${result.error}`);
         }
       } else {
-        console.log(`[Clock] ${node.title}: Processed ${result.bosunProcessed} bosun(s)`);
+        console.log(`[Clock] ${node.title}: Processed ${result.bosunProcessed} bosun(s) [Well: ${bosunsBefore} → ${bosunsAfter}]`);
       }
     } catch (error) {
       console.error(`[Clock] Error executing activity for ${node.title}:`, error);
