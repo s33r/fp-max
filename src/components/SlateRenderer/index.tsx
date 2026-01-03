@@ -138,6 +138,55 @@ function findNodeAtTitleBar(
   return null;
 }
 
+/**
+ * Config button indices
+ */
+enum ConfigButton {
+  Lock = 0,
+  Flip = 1,
+  Reverse = 2,
+  Help = 3
+}
+
+/**
+ * Find if a config button was clicked on any node
+ * Returns the node and button index if found, null otherwise
+ */
+function findConfigButtonClick(
+  slate: Slate,
+  x: number,
+  y: number
+): { id: string; node: Node; button: ConfigButton } | null {
+  const nodes = slate.getAllNodes();
+
+  // Check nodes in reverse order (top-most first, since they're drawn last)
+  for (let i = nodes.length - 1; i >= 0; i--) {
+    const { id, node, position } = nodes[i];
+
+    const nodeHeight = calculateNodeHeight(node);
+    const configBarY = position.y + nodeHeight - GRID_SIZE;
+
+    // Check if point is within config bar bounds
+    if (
+      x >= position.x &&
+      x <= position.x + NODE_WIDTH &&
+      y >= configBarY &&
+      y <= configBarY + GRID_SIZE
+    ) {
+      // Determine which button was clicked
+      const buttonWidth = NODE_WIDTH / 4;
+      const relativeX = x - position.x;
+      const buttonIndex = Math.floor(relativeX / buttonWidth);
+
+      if (buttonIndex >= 0 && buttonIndex <= 3) {
+        return { id, node, button: buttonIndex as ConfigButton };
+      }
+    }
+  }
+
+  return null;
+}
+
 function drawGrid(ctx: CanvasRenderingContext2D, width: number, height: number): void {
   ctx.fillStyle = COLORS.background;
   ctx.fillRect(0, 0, width, height);
@@ -544,9 +593,26 @@ export const SlateRenderer: React.FC<SlateRendererProps> = ({
     };
   }, []);
 
-  // Handle mouse down - start dragging if on title bar
+  // Handle mouse down - check for button clicks first, then start dragging if on title bar
   const handleMouseDown = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
     const pos = getMousePosition(e);
+
+    // Check for config button clicks first
+    const buttonClick = findConfigButtonClick(slate, pos.x, pos.y);
+    if (buttonClick) {
+      switch (buttonClick.button) {
+        case ConfigButton.Lock:
+          buttonClick.node.toggleLocked();
+          setRenderTrigger(prev => prev + 1);
+          if (onSlateChange) {
+            onSlateChange();
+          }
+          return;
+        // Other buttons can be handled here in the future
+      }
+    }
+
+    // Check for title bar drag
     const hitNode = findNodeAtTitleBar(slate, pos.x, pos.y);
 
     if (hitNode && !hitNode.node.locked) {
@@ -563,7 +629,7 @@ export const SlateRenderer: React.FC<SlateRendererProps> = ({
         canvas.style.cursor = 'grabbing';
       }
     }
-  }, [slate, getMousePosition]);
+  }, [slate, getMousePosition, onSlateChange]);
 
   // Handle mouse move - update node position if dragging
   const handleMouseMove = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
@@ -583,11 +649,17 @@ export const SlateRenderer: React.FC<SlateRendererProps> = ({
       // Update cursor based on hover state
       const canvas = canvasRef.current;
       if (canvas) {
-        const hitNode = findNodeAtTitleBar(slate, pos.x, pos.y);
-        if (hitNode && !hitNode.node.locked) {
-          canvas.style.cursor = 'grab';
+        // Check for config button hover first
+        const buttonHover = findConfigButtonClick(slate, pos.x, pos.y);
+        if (buttonHover) {
+          canvas.style.cursor = 'pointer';
         } else {
-          canvas.style.cursor = 'default';
+          const hitNode = findNodeAtTitleBar(slate, pos.x, pos.y);
+          if (hitNode && !hitNode.node.locked) {
+            canvas.style.cursor = 'grab';
+          } else {
+            canvas.style.cursor = 'default';
+          }
         }
       }
     }
