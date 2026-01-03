@@ -18,6 +18,7 @@ Activities define the behavior of nodes in the slate network. Each node has an a
 - `index.ts` - Activity registry and exports
 - `emitActivity.ts` - Source node activity (spawns bosuns)
 - `collectActivity.ts` - Sink node activity (collects bosuns and inventory)
+- `printActivity.ts` - Printer node activity (logs bosun information)
 
 ## Implemented Activities
 
@@ -47,9 +48,25 @@ Activities define the behavior of nodes in the slate network. Each node has an a
 
 **Note**: If the Infinity Well is at capacity for bosuns, the inventory is still transferred but the bosun itself cannot be returned.
 
+### Print Activity
+**Used by**: Printer nodes
+
+**Behavior**:
+- Pulls bosuns from input connections using round-robin
+- Logs detailed bosun information to the console including:
+  - Bosun ID and name
+  - Current speed
+  - Tooltip (if present)
+  - Complete inventory (resources and items)
+- Pushes bosun to output connections using round-robin
+- Acts as a pass-through node for debugging the network
+
+**Parameters**: None
+
+**Output Format**: Displays a formatted box with bosun details in the console
+
 ## Planned Activities
 
-- **Print**: Logs bosun information for debugging (Printer nodes)
 - **Split**: Distributes bosuns across outputs (Splitter nodes)
 - **Smart Split**: Filters bosuns to specific outputs (Smart Splitter nodes)
 - **Merge**: Combines bosuns from multiple inputs (Merger nodes)
