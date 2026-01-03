@@ -176,7 +176,8 @@ export class Clock {
 
   /**
    * Gets nodes in topological order (sources first, then downstream)
-   * Uses depth-first search to ensure proper execution order
+   * Uses breadth-first search to ensure proper execution order
+   * Prevents running the same activity twice in one tick (cycle detection)
    */
   private getTopologicalOrder(): Array<{ id: string; node: Node }> {
     const allNodes = this.slate.getAllNodes();
@@ -208,17 +209,22 @@ export class Clock {
       return inputConns.length === 0;
     });
 
-    // DFS from each source node
-    const visit = (nodeId: string) => {
-      if (visited.has(nodeId)) {
-        return;
-      }
+    // BFS from all source nodes
+    const queue: string[] = [];
 
-      visited.add(nodeId);
+    // Add all source nodes to the queue
+    for (const { id } of sourceNodes) {
+      queue.push(id);
+      visited.add(id);
+    }
+
+    // Process nodes in breadth-first order
+    while (queue.length > 0) {
+      const nodeId = queue.shift()!;
 
       const nodeData = this.slate.nodes.get(nodeId);
       if (!nodeData) {
-        return;
+        continue;
       }
 
       // Add this node to result
@@ -227,21 +233,28 @@ export class Clock {
         node: nodeData.node
       });
 
-      // Visit downstream nodes
+      // Add downstream nodes to queue (if not already visited)
       const downstream = adjacencyMap.get(nodeId) || [];
       for (const downstreamId of downstream) {
-        visit(downstreamId);
+        if (!visited.has(downstreamId)) {
+          visited.add(downstreamId);
+          queue.push(downstreamId);
+        }
+        // If already visited, this is a cycle - skip to prevent duplicate execution
       }
-    };
-
-    // Visit all source nodes first
-    for (const { id } of sourceNodes) {
-      visit(id);
     }
 
-    // Visit any remaining unvisited nodes (in case of cycles or disconnected nodes)
+    // Handle any remaining unvisited nodes (disconnected from sources)
     for (const { id } of allNodes) {
-      visit(id);
+      if (!visited.has(id)) {
+        const nodeData = this.slate.nodes.get(id);
+        if (nodeData) {
+          result.push({
+            id,
+            node: nodeData.node
+          });
+        }
+      }
     }
 
     return result;
